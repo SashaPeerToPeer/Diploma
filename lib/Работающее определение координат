@@ -1,0 +1,150 @@
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: MyPageView(),
+    );
+  }
+}
+
+class MyPageView extends StatefulWidget {
+  @override
+  _MyPageViewState createState() => _MyPageViewState();
+}
+
+class _MyPageViewState extends State<MyPageView> {
+  PageController _pageController = PageController(initialPage: 0);
+  double _startX = 0;
+  double _startY = 0;
+  List<Offset> iconPositions = []; // Список с координатами иконок
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController.addListener(() {
+      // Вызывается, когда страница в PageView меняется
+      _updateIconPositions();
+    });
+  }
+
+  // Функция для обновления координат иконок
+  void _updateIconPositions() {
+    // Определяем координаты иконок на текущей странице
+    final currentPage = _pageController.page?.toInt() ?? 0; // Добавляем проверку на null
+    iconPositions.clear();
+
+    if (currentPage == 0) {
+      for (int i = 0; i < 24; i++) {
+        final row = i ~/ 4;
+        final col = i % 4;
+        final x = col * 100.0 ;
+        final y = row * 100.0 -5 ;
+        iconPositions.add(Offset(x, y));
+      }
+    } else if (currentPage == 1) {
+      for (int i = 0; i < 24; i++) {
+        final row = i ~/ 4;
+        final col = i % 4;
+        final x = col * 100.0 ;
+        final y = row * 100.0 - 5;
+        iconPositions.add(Offset(x, y));
+      }
+    }
+
+    setState(() {});
+  }
+
+  // Функция для сравнения начала свайпа с координатами иконок
+  void _compareSwipeAndIcons(double x, double y) {
+    for (int i = 0; i < iconPositions.length; i++) {
+      final iconX = iconPositions[i].dx;
+      final iconY = iconPositions[i].dy;
+      if (x >= iconX && x <= iconX + 100 && y >= iconY && y <= iconY + 100) {
+        print("Свайп начат с иконки $i");
+        break;
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('PageView with Swipe Detection'),
+      ),
+      body: GestureDetector(
+        onHorizontalDragStart: (details) {
+          // Отслеживаем начальную позицию свайпа
+          _startX = details.localPosition.dx;
+          _startY = details.localPosition.dy;
+          _compareSwipeAndIcons(_startX, _startY);
+        },
+        onHorizontalDragUpdate: (details) {
+          // Вычисляем изменение позиции свайпа
+          double dx = details.localPosition.dx - _startX;
+
+          if (dx > 0) {
+            // Свайп вправо, перелистываем на предыдущий экран
+            _pageController.previousPage(duration: Duration(milliseconds: 300), curve: Curves.ease);
+          } else if (dx < 0) {
+            // Свайп влево, перелистываем на следующий экран
+            _pageController.nextPage(duration: Duration(milliseconds: 300), curve: Curves.ease);
+          }
+        },
+        child: Stack(
+          children: <Widget>[
+            PageView(
+              controller: _pageController,
+              children: <Widget>[
+                GridView.builder(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 4,
+                  ),
+                  itemBuilder: (context, index) {
+                    return Center(
+                      child: Text(
+                        (index ).toString(),
+                        style: TextStyle(fontSize: 24),
+                      ),
+                    );
+                  },
+                ),
+                GridView.builder(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 4,
+                  ),
+                  itemBuilder: (context, index) {
+                    return Center(
+                      child: Text(
+                        (index ).toString(),
+                        style: TextStyle(fontSize: 24),
+                      ),
+                    );
+                  },
+                ),
+                Container(
+                  color: Colors.orange,
+                  child: Center(child: Text('Экран 3')),
+                ),
+              ],
+            ),
+            // Отобразим иконки на текущей странице
+            if (iconPositions.isNotEmpty)
+              for (var position in iconPositions)
+                Positioned(
+                  left: position.dx,
+                  top: position.dy,
+                  child: Icon(Icons.star_border, size: 120, color: Colors.red),
+                ),
+          ],
+        ),
+      ),
+    );
+  }
+}
